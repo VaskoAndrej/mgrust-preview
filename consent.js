@@ -167,10 +167,10 @@
   dialog.setAttribute("aria-describedby", "consent-intro");
   dialog.innerHTML = `
     <div class="consent-inner">
-      <div class="consent-topline"><span class="consent-brand">TVOJE SÚKROMIE</span><button class="consent-close" type="button" data-consent-close aria-label="Zavrieť bez zmeny nastavení">×</button></div>
+      <div class="consent-topline"><span class="consent-brand">TVOJE SÚKROMIE</span><button class="consent-close" type="button" data-consent-close aria-label="Zavrieť bez zmeny nastavení"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
       <h2 class="consent-title" id="consent-title">Povoliť cookies?</h2>
       <p class="consent-intro" id="consent-intro">Dáta nám pomáhajú rásť a zlepšovať web. Vyber si, ktoré voliteľné služby nám dovolíš používať.</p>
-      <a class="consent-policy" href="privacy.html">Ochrana súkromia a cookies ↗</a>
+      <a class="consent-policy" href="privacy.html">Ochrana súkromia a cookies <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19 19 5M7 5h12v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
       <div class="consent-settings" id="consent-settings" hidden>
         <div class="consent-category"><div class="consent-category-heading"><h3>Nevyhnutné nastavenia</h3><span class="consent-always">VŽDY AKTÍVNE</span></div><p>Uložíme len tvoju voľbu súkromia do tohto prehliadača, aby sa okno nezobrazovalo pri každej návšteve. Platnosť voľby je najviac ${maxAgeDays} dní.</p></div>
         <div class="consent-category"><label for="consent-analytics">Analytika návštevnosti<input type="checkbox" role="switch" id="consent-analytics" aria-describedby="consent-analytics-description consent-analytics-status"></label><p id="consent-analytics-description">Google Analytics 4 pomáha porozumieť návštevám. Po povolení môže Google spracúvať informácie o stránke, prehliadači a zariadení a uložiť analytické cookies. Reklamná personalizácia je vypnutá.</p><p class="consent-service-status" id="consent-analytics-status"></p></div>

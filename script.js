@@ -2,6 +2,19 @@
 
 const videoGrid = document.getElementById("video-grid");
 const videoData = Array.isArray(window.MG_RUST_VIDEOS) ? window.MG_RUST_VIDEOS : [];
+
+function createIcon(name) {
+  const namespace = "http://www.w3.org/2000/svg";
+  const icon = document.createElementNS(namespace, "svg");
+  icon.setAttribute("class", "icon");
+  icon.setAttribute("aria-hidden", "true");
+  icon.setAttribute("focusable", "false");
+  const symbol = document.createElementNS(namespace, "use");
+  symbol.setAttribute("href", `#${name}`);
+  icon.append(symbol);
+  return icon;
+}
+
 for (const video of videoData.slice(0, 3)) {
   if (!/^[\w-]{11}$/.test(video.id) || typeof video.title !== "string") continue;
 
@@ -24,7 +37,7 @@ for (const video of videoData.slice(0, 3)) {
   thumb.append(image);
   const play = document.createElement("span");
   play.className = "play-mark";
-  play.textContent = "▶";
+  play.append(createIcon("play"));
   play.setAttribute("aria-hidden", "true");
   thumb.append(play);
 
@@ -32,7 +45,8 @@ for (const video of videoData.slice(0, 3)) {
   title.textContent = video.title;
   const open = document.createElement("span");
   open.className = "video-open";
-  open.textContent = "Pozrieť video ↗";
+  open.textContent = "Pozrieť video";
+  open.append(createIcon("arrow"));
   card.append(thumb, title, open);
   videoGrid.append(card);
 }
@@ -47,7 +61,8 @@ if (!videoGrid.children.length) {
   link.href = "https://www.youtube.com/@MGRustSurvival/videos";
   link.target = "_blank";
   link.rel = "noopener noreferrer";
-  link.textContent = "Otvoriť kanál ↗";
+  link.textContent = "Otvoriť kanál";
+  link.append(createIcon("arrow"));
   fallback.append(message, link);
   videoGrid.append(fallback);
 }

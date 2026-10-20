@@ -11,9 +11,10 @@
 .consent-brand::before { content: "MG"; display: grid; place-items: center; width: 30px; height: 29px; color: #111; background: #f05a38; font-size: 14px; font-weight: 900; letter-spacing: -.08em; transform: skew(-7deg); }
 .consent-close { display: grid; place-items: center; flex: none; width: 36px; height: 36px; padding: 0; border: 1px solid #655e52; background: transparent; color: #f5f0e7; font: 24px/1 Arial, sans-serif; cursor: pointer; }
 .consent-close:hover { border-color: #f05a38; color: #f05a38; }
+.consent-close svg { display: block; width: 18px; height: 18px; }
 .consent-title { margin: 0 0 12px; color: #f5f0e7; font: 900 clamp(29px, 5vw, 38px)/1.05 Impact, "Arial Narrow", "Arial Black", sans-serif; letter-spacing: -.015em; text-transform: uppercase; }
 .consent-intro { margin: 0; color: #c7c0b4; font-size: 14px; line-height: 1.65; }
-.consent-policy { display: inline-block; margin: 12px 0 19px; color: #f5f0e7; font-size: 12px; text-decoration: underline; text-underline-offset: 4px; }
+.consent-policy { display: inline-flex; align-items: center; gap: 8px; margin: 12px 0 19px; color: #f5f0e7; font-size: 12px; text-decoration: underline; text-underline-offset: 4px; }
 .consent-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .consent-button { min-height: 46px; padding: 11px 15px; border: 1px solid #f5f0e7; background: #f5f0e7; color: #151411; font: 800 13px/1.4 Arial, sans-serif; cursor: pointer; text-align: center; transition: background .2s, border-color .2s; }
 .consent-button:hover { background: #e0d8c8; border-color: #e0d8c8; }
@@ -46,7 +47,7 @@
 .privacy-page h2 { margin: 38px 0 14px; color: #f5f0e7; font-size: 22px; }
 .privacy-page p, .privacy-page li { color: #c7c0b4; font-size: 15px; line-height: 1.8; }
 .privacy-page a { text-decoration: underline; text-underline-offset: 4px; }
-.privacy-page .privacy-back { color: #f05a38; font-size: 13px; font-weight: 800; }
+.privacy-page .privacy-back { display: inline-flex; align-items: center; gap: 8px; color: #f05a38; font-size: 13px; font-weight: 800; }
 .privacy-page .privacy-pending { padding: 16px 18px; border-left: 3px solid #f05a38; background: #211f19; }
 .privacy-table-wrap { overflow-x: auto; }
 .privacy-page table { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 1.6; text-align: left; }
