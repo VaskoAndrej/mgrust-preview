@@ -135,9 +135,9 @@ button { font: inherit; }
 .membership-art-caption > span:first-child { color: #ff9674; font-weight: 850; }
 .membership-copy { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 90px clamp(30px,8vw,132px) 90px clamp(30px,6vw,100px); }
 .membership-copy > p:not(.section-kicker) { max-width: 560px; color: #c9c1b6; font-size: 18px; line-height: 1.6; }
-.vip-box { max-width: 560px; margin: 18px 0 31px; padding: 20px 23px; border-left: 3px solid #f05a38; background: #2d2a25; }
-.vip-box strong { color: #f05a38; font-size: 13px; letter-spacing: .12em; }
-.vip-box p { margin: 9px 0 0; color: #ddd6cb; font-size: 15px; line-height: 1.6; }
+.membership-benefit { max-width: 560px; margin: 18px 0 31px; padding: 20px 23px; border-left: 3px solid #f05a38; background: #2d2a25; }
+.membership-benefit strong { color: #f05a38; font-size: 13px; letter-spacing: .12em; }
+.membership-benefit p { margin: 9px 0 0; color: #ddd6cb; font-size: 15px; line-height: 1.6; }
 .setup-section { background: #141412; }
 .setup-intro { margin: 30px auto 0; color: #afa79b; font-size: 16px; line-height: 1.5; text-align: center; }
 .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
