@@ -8,10 +8,16 @@
   const maxAge = maxAgeDays * 86400000;
   const measurementId = String(config.analyticsMeasurementId || "").trim().toUpperCase();
   const analyticsConfigured = /^G-[A-Z0-9]{5,}$/.test(measurementId);
-  const localPreview = !/^https?:$/.test(location.protocol) || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || /\.test$/.test(location.hostname);
-  const analyticsAvailable = analyticsConfigured && (!localPreview || config.allowLocalAnalytics === true);
+  const allowedHosts = (Array.isArray(config.analyticsAllowedHosts) ? config.analyticsAllowedHosts : ["mgrust.eu", "www.mgrust.eu"])
+    .filter((host) => typeof host === "string" && /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/i.test(host.trim()))
+    .map((host) => host.trim().toLowerCase());
+  // Exact production hosts only. A real G-ID must never activate preview traffic.
+  const analyticsHostAllowed = location.protocol === "https:" && allowedHosts.includes(location.hostname.toLowerCase());
+  const analyticsAvailable = analyticsConfigured && analyticsHostAllowed;
   const guildId = /^\d{15,22}$/.test(String(config.discordGuildId || "")) ? String(config.discordGuildId) : "";
-  const externalMediaConfigured = Boolean(guildId || config.discordInviteCode);
+  const inviteConfigured = /^[\w-]{2,100}$/.test(String(config.discordInviteCode || ""));
+  const widgetConfigured = config.discordWidgetEnabled === true && Boolean(guildId);
+  const externalMediaConfigured = inviteConfigured || widgetConfigured;
   let preferences = { analytics: false, externalMedia: false };
   let hasChoice = false;
   let tagStarted = false;
@@ -47,9 +53,15 @@
   }
 
   function clearAnalyticsCookies() {
-    // Only cookies belonging to known Google Analytics namespaces are removed.
-    // Cookies on Google/Discord origins cannot be deleted from this origin.
-    const names = document.cookie.split(";").map((cookie) => cookie.split("=")[0].trim()).filter((name) => /^(_ga(?:_|$)|_gid$|_gat(?:_|$))/.test(name));
+    // Never touch GA cookies on shared preview origins or before a property is
+    // configured. Only this property's standard GA4 cookie and shared _ga ID
+    // belong to this integration; other GA properties and legacy cookies stay.
+    if (!analyticsConfigured || !analyticsHostAllowed) return;
+    const ownedNames = new Set(["_ga", "_ga_" + measurementId.slice(2)]);
+    let names;
+    try {
+      names = document.cookie.split(";").map((cookie) => cookie.split("=")[0].trim()).filter((name) => ownedNames.has(name));
+    } catch (_) { return; }
     const domains = [""];
     const hostParts = location.hostname.split(".");
     for (let i = 0; i < hostParts.length - 1; i++) {
@@ -65,12 +77,14 @@
       paths.add(path + "/");
     }
     for (const name of names) for (const domain of domains) for (const cookiePath of paths) {
-      document.cookie = `${name}=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${cookiePath}${domain ? "; domain=" + domain : ""}`;
+      try {
+        document.cookie = `${name}=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=${cookiePath}${domain ? "; domain=" + domain : ""}`;
+      } catch (_) { /* A browser policy can make cookies inaccessible. */ }
     }
   }
 
   function getState() {
-    return Object.freeze({ ...preferences, hasChoice, analyticsConfigured, analyticsActive, externalMediaConfigured, discordWidgetEnabled: config.discordWidgetEnabled === true, storageAvailable });
+    return Object.freeze({ ...preferences, hasChoice, analyticsConfigured, analyticsHostAllowed, analyticsAvailable, analyticsActive, externalMediaConfigured, discordWidgetEnabled: widgetConfigured, storageAvailable });
   }
 
   function emitChange() {
@@ -130,7 +144,7 @@
   function renderExternalMedia() {
     // The parent page handles the public invite-count card. The official iframe
     // is inserted only when the server owner has enabled it in Discord settings.
-    if (config.discordWidgetEnabled !== true || !guildId) return;
+    if (!widgetConfigured) return;
     document.querySelectorAll("[data-discord-widget]").forEach((container) => {
       const current = container.querySelector("iframe[data-mg-discord-frame]");
       if (preferences.externalMedia) {
@@ -169,12 +183,12 @@
     <div class="consent-inner">
       <div class="consent-topline"><span class="consent-brand">TVOJE SÚKROMIE</span><button class="consent-close" type="button" data-consent-close aria-label="Zavrieť bez zmeny nastavení"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
       <h2 class="consent-title" id="consent-title">Povoliť cookies?</h2>
-      <p class="consent-intro" id="consent-intro">Dáta nám pomáhajú rásť a zlepšovať web. Vyber si, ktoré voliteľné služby nám dovolíš používať.</p>
+      <p class="consent-intro" id="consent-intro"></p>
       <a class="consent-policy" href="privacy.html">Ochrana súkromia a cookies <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 19 19 5M7 5h12v12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
       <div class="consent-settings" id="consent-settings" hidden>
         <div class="consent-category"><div class="consent-category-heading"><h3>Nevyhnutné nastavenia</h3><span class="consent-always">VŽDY AKTÍVNE</span></div><p>Uložíme len tvoju voľbu súkromia do tohto prehliadača, aby sa okno nezobrazovalo pri každej návšteve. Platnosť voľby je najviac ${maxAgeDays} dní.</p></div>
-        <div class="consent-category"><label for="consent-analytics">Analytika návštevnosti<input type="checkbox" role="switch" id="consent-analytics" aria-describedby="consent-analytics-description consent-analytics-status"></label><p id="consent-analytics-description">Google Analytics 4 pomáha porozumieť návštevám. Po povolení môže Google spracúvať informácie o stránke, prehliadači a zariadení a uložiť analytické cookies. Reklamná personalizácia je vypnutá.</p><p class="consent-service-status" id="consent-analytics-status"></p></div>
-        <div class="consent-category"><label for="consent-external">Externý obsah Discord<input type="checkbox" role="switch" id="consent-external" aria-describedby="consent-external-description"></label><p id="consent-external-description">Načíta živé počty členov komunity a dostupný Discord widget. Prehliadač sa spojí so službou Discord, ktorej sprístupní IP adresu a technické údaje. Vložený obsah môže používať vlastné úložiská.</p></div>
+        <div class="consent-category"><label for="consent-analytics">Analytika návštev a kliknutí<input type="checkbox" role="switch" id="consent-analytics" aria-describedby="consent-analytics-description consent-analytics-status"></label><p id="consent-analytics-description">Google Analytics 4 meria návštevy a kliknutia na odkazy na naše kanály, videá a podporu. Po povolení môže Google spracúvať informácie o stránke, prehliadači, zariadení a návšteve a uložiť analytické cookies. Reklamná personalizácia je vypnutá.</p><p class="consent-service-status" id="consent-analytics-status"></p></div>
+        <div class="consent-category"><label for="consent-external">Živý prehľad Discord komunity<input type="checkbox" role="switch" id="consent-external" aria-describedby="consent-external-description"></label><p id="consent-external-description"></p></div>
       </div>
       <div class="consent-actions"><button class="consent-button" type="button" data-consent-reject>Odmietnuť voliteľné</button><button class="consent-button" type="button" data-consent-accept>Prijať všetky dostupné</button><button class="consent-button consent-button-secondary consent-customize" type="button" data-consent-customize aria-expanded="false" aria-controls="consent-settings">Prispôsobiť nastavenia</button><button class="consent-button consent-button-secondary consent-customize" type="button" data-consent-save hidden>Uložiť môj výber</button></div>
       <p class="consent-note" data-consent-note>Nastavenia môžeš kedykoľvek zmeniť alebo súhlas odvolať v päte webu. Zatvorenie okna ani posúvanie stránky nie je súhlas.</p>
@@ -195,12 +209,19 @@
   const saveButton = dialog.querySelector("[data-consent-save]");
   analyticsInput.disabled = !analyticsAvailable;
   externalInput.disabled = !externalMediaConfigured;
+  const discordPurpose = widgetConfigured ? "Načíta počet členov, online používateľov a vložený Discord widget. Prehliadač sa spojí so službou Discord, ktorej sprístupní IP adresu a technické údaje. Widget môže používať vlastné cookies a úložiská." : "Načíta verejný počet členov a online používateľov komunity cez rozhranie Discord. Pri spojení Discord dostane IP adresu a technické údaje prehliadača. Súhlas sa vzťahuje na tento živý prehľad.";
+  dialog.querySelector("#consent-external-description").textContent = discordPurpose;
+  dialog.querySelector("#consent-intro").textContent = analyticsAvailable
+    ? "S tvojím súhlasom Google Analytics 4 meria návštevy a kliknutia na naše kanály. Samostatne môžeš povoliť živé údaje komunity zo služby Discord. Voliteľné služby sú dovtedy vypnuté. Svoju voľbu si môžeš kedykoľvek zmeniť."
+    : !analyticsConfigured
+      ? "Google Analytics 4 zatiaľ nie je pripojený, preto návštevnosť ani kliknutia nemeriame. S tvojím súhlasom načítame počet členov a online používateľov zo služby Discord. Tvoju voľbu si zapamätáme v tomto prehliadači."
+      : "V tomto náhľade je analytika vypnutá. S tvojím súhlasom načítame počet členov a online používateľov zo služby Discord. Tvoju voľbu si zapamätáme v tomto prehliadači.";
 
   function refreshStatus() {
     const status = dialog.querySelector("#consent-analytics-status");
-    status.textContent = !analyticsConfigured ? "Analytika zatiaľ nie je pripojená. V tejto verzii sa návštevy nemerajú." : !analyticsAvailable ? "V lokálnom náhľade je meranie vypnuté." : !preferences.analytics ? "Aktuálne vypnutá. Spustí sa až po tvojom súhlase." : analyticsActive ? "Povolená. Google tag sa načítal." : "Povolená. Načítanie môže obmedziť prehliadač alebo blokovanie obsahu.";
+    status.textContent = !analyticsConfigured ? "Analytika zatiaľ nie je pripojená a nedá sa povoliť." : !analyticsHostAllowed ? "Na tejto adrese je analytika vypnutá. Meranie je určené len pre produkčný web." : !preferences.analytics ? "Aktuálne vypnutá. Spustí sa až po tvojom súhlase." : analyticsActive ? "Povolená. Google tag sa načítal." : "Povolená. Načítanie môže obmedziť prehliadač alebo blokovanie obsahu.";
     dialog.querySelector("[data-consent-reset]").hidden = !hasChoice;
-    if (!storageAvailable) dialog.querySelector("[data-consent-note]").textContent = "Prehliadač nepovolil uloženie voľby. Nastavenie platí pre túto otvorenú stránku a pri ďalšej návšteve sa okno zobrazí znova.";
+    dialog.querySelector("[data-consent-note]").textContent = !storageAvailable ? "Prehliadač nepovolil uloženie voľby. Nastavenie platí pre túto otvorenú stránku a pri ďalšej návšteve sa okno zobrazí znova." : "Web môžeš používať aj po odmietnutí. Nastavenia môžeš zmeniť alebo súhlas odvolať v päte webu. Zatvorenie okna ani posúvanie stránky nie je súhlas.";
   }
 
   function showSettings(category) {
@@ -308,8 +329,15 @@
       element.replaceChildren(link);
     }
   });
+  const controllerAddress = typeof config.controllerAddress === "string" ? config.controllerAddress.trim() : "";
+  if (controllerAddress) {
+    document.querySelectorAll("[data-controller-address]").forEach((element) => { element.textContent = controllerAddress; });
+    document.querySelectorAll("[data-controller-address-row]").forEach((element) => { element.hidden = false; });
+  }
+  const hostingDetails = typeof config.hostingDetails === "string" ? config.hostingDetails.trim() : "";
+  if (hostingDetails) document.querySelectorAll("[data-hosting-details]").forEach((element) => { element.textContent = hostingDetails; });
   document.querySelectorAll("[data-analytics-policy-status]").forEach((element) => {
-    element.textContent = analyticsConfigured ? "Google Analytics 4 je pripojený a načíta sa len po povolení analytiky. Bez súhlasu sa službe Google neposiela meranie ani stav súhlasu." : "Google Analytics 4 zatiaľ nie je pripojený. Tento web momentálne nemeria návštevnosť cez analytickú službu.";
+    element.textContent = !analyticsConfigured ? "Google Analytics 4 zatiaľ nie je pripojený. Tento web momentálne nemeria návštevnosť ani kliknutia cez analytickú službu." : !analyticsHostAllowed ? "V tomto náhľade sa analytika nespúšťa. Meranie je povolené len na produkčnej doméne po súhlase návštevníka." : "Google Analytics 4 je pripojený a načíta sa len po povolení analytiky. Bez súhlasu sa službe Google neposiela meranie ani stav súhlasu.";
   });
   window.MGConsent = Object.freeze({ getState, open, reset, setPreferences });
   refreshStatus();
